@@ -1,13 +1,22 @@
 from django.db import models
 from accounts.models import User
+from .utils import Category_image_renamer
+from uuid import uuid4
+from django.utils.text import slugify 
 
 # Create your models here.
 class Category(models.Model):
     name = models.CharField(max_length=255)
+    image = models.ImageField(upload_to=Category_image_renamer,null=True,blank=True)
     slug = models.SlugField(unique=True)
 
     def __str__(self):
         return self.name
+    
+    def save(self,*args,**kwargs):
+        if not self.slug_field:
+            self.slug_field = slugify(self.name+str(uuid4())[:10])
+        return super().save(*args,**kwargs)
 
 class ProductTag(models.Model):
     name = models.CharField(max_length=50)
