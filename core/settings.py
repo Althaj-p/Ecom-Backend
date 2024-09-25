@@ -86,6 +86,22 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+# Link for download redis on windows,basically redis not supported on windows
+# https://sourceforge.net/projects/redis-for-windows.mirror/
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        # 'KEY_PREFIX': 'myapp'
+    }
+}
+
+# Set up cache timeout (optional)
+CACHE_TTL = 60 * 15  # 15 minutes
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

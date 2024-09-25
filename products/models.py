@@ -4,6 +4,7 @@ from .utils import Category_image_renamer
 from uuid import uuid4
 from django.utils.text import slugify 
 from core.utils import Base_content
+from django.core.cache import cache
 
 # Create your models here.
 class Category(Base_content):
@@ -19,6 +20,14 @@ class Category(Base_content):
             self.slug = slugify(self.name+str(uuid4())[:10])
         return super().save(*args,**kwargs)
 
+class SubCategory(Base_content):
+    category = models.ForeignKey(Category,on_delete=models.CASCADE,related_name='categories')
+    name = models.CharField(max_length=500)
+    image = models.ImageField(upload_to=Category_image_renamer,null=True,blank=True)
+    
+    def __str__(self):
+        return self.name
+    
 class ProductTag(models.Model):
     name = models.CharField(max_length=50)
     slug = models.SlugField(unique=True)
@@ -37,9 +46,21 @@ class Product(models.Model):
     tags = models.ManyToManyField(ProductTag, related_name='products', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    status = models.CharField(max_length=50,choices=(('Active','Active'),('Inactive','Inactive')),default='Active')
+    slug = models.SlugField(unique=True,null=True,blank=True)
+
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        # Clear the product detail cache when a product is saved
+        cache_key = f"product_detail_{self.slug}"
+        cache.delete(cache_key)
+        
+        if not self.slug:
+            self.slug = slugify(self.name+str(uuid4())[:10])
+            
+        return super().save(*args,**kwargs)
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE)
