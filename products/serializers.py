@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Product, ProductImage, ProductVariant,Category,ProductTag
+from .models import Product, ProductVarientImage, ProductVariant,Category,ProductTag
+from .models import *
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,25 +10,31 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ProductImage
+        model = ProductVarientImage
         fields = ['id', 'image', 'alt_text']
 
-class ProductVariantSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProductVariant
-        fields = ['id', 'variant_name', 'variant_price', 'stock']
+class VariantValuesSerializer(serializers.ModelSerializer):
+    varient_type = serializers.StringRelatedField()  # Display the name of the variant type
 
-class ProductTagSerializer(serializers.ModelSerializer):
     class Meta:
-        model = ProductTag
-        fields = ['name']
+        model = Varient_values
+        fields = ['id', 'varient_type', 'value']
 
-class ProductSerializer(serializers.ModelSerializer):
-    category = serializers.StringRelatedField() 
-    tags = ProductTagSerializer(many=True)
-    images = ProductImageSerializer(many=True, read_only=True)
-    variants = ProductVariantSerializer(many=True, read_only=True)  # Include variants in the product response
+class ProductDetailSerializer(serializers.ModelSerializer):
+    """Serializer for basic product details to be included in the variant response."""
+    category = serializers.StringRelatedField()  # Display the name of the category
+    tags = serializers.StringRelatedField(many=True)  # Display the names of tags
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'price', 'discount_price', 'sku', 'total_stock', 'category', 'tags', 'status', 'images', 'variants','slug']
+        fields = ['id', 'name', 'description', 'category', 'tags', 'price', 'discount_price']
+
+class ProductVariantSerializer(serializers.ModelSerializer):
+    primary_varient = VariantValuesSerializer(read_only=True)
+    secondary_varient = VariantValuesSerializer(read_only=True)
+    variant_images = ProductImageSerializer(many=True, read_only=True)
+    product = ProductDetailSerializer(read_only=True)  # Include selective product details
+
+    class Meta:
+        model = ProductVariant
+        fields = ['id', 'variant_name', 'price', 'discount_price', 'sku', 'total_stock', 'primary_varient', 'secondary_varient', 'variant_images', 'product','slug']
