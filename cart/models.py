@@ -1,9 +1,10 @@
 from django.db import models
 from accounts.models import User
 from products.models import Product,ProductVariant
+from core.utils import Base_content
 
 # Create your models here.
-class Cart(models.Model):
+class Cart(Base_content):
     user = models.OneToOneField(User, related_name='cart', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -11,15 +12,15 @@ class Cart(models.Model):
     def __str__(self):
         return f"Cart of {self.user.email}"
 
-class CartItem(models.Model):
+class CartItem(Base_content):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, related_name='cart_items', on_delete=models.CASCADE)
     variant = models.ForeignKey(ProductVariant, related_name='cart_items', on_delete=models.SET_NULL, null=True, blank=True)
-    quantity = models.IntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    quantity = models.IntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2,null=True,blank=True)
+    cart_total = models.DecimalField(max_digits=20,decimal_places=2,null=True)
 
     def __str__(self):
-        return f"{self.quantity} x {self.product.name}"
+        return f"{self.quantity} x {self.variant}"
 
 class Coupon(models.Model):
     code = models.CharField(max_length=50, unique=True)
