@@ -43,7 +43,7 @@ class Discount(models.Model):
 
 class Wishlist(models.Model):
     user = models.ForeignKey(User, related_name='wishlists', on_delete=models.CASCADE)
-    products = models.ManyToManyField(Product, related_name='wishlists')
+    products = models.ManyToManyField(ProductVariant, related_name='wishlists')
 
     def __str__(self):
         return f"Wishlist of {self.user.email}"
