@@ -3,9 +3,9 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.core.cache import cache
-from .models import Cart, CartItem
+from .models import Cart, CartItem,Wishlist
 from products.models import ProductVariant
-from .serializers import CartSerializer, CartItemSerializer
+from .serializers import CartSerializer, CartItemSerializer,WishlistSerializer
 from decimal import Decimal
 
 # View Cart
@@ -123,11 +123,61 @@ def wishlists(request):
     except Wishlist.DoesNotExist:
         return Response({'status': 0, 'error': 'Wishlist not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    serializer = WishlistSerializer(user_wishlist)
+    # serializer = WishlistSerializer(user_wishlist)
     response_data = {
-        'data': serializer.data,
-        'status': 1,
+        'user':user_wishlist.user.email,
+        'items':[],
+        'status':1
     }
+    for i in user_wishlist.products.all():
+        product_data = {
+            'product_varient_id':i.id,
+            'product':i.product.name,
+        }
+        response_data['items'].append(product_data)
     cache.set(cache_key, response_data, timeout=60 * 15)
     
     return Response(response_data, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_to_wishlist(request):
+    user = request.user
+    product_id = request.data.get('product_id')
+
+    try:
+        product_variant = ProductVariant.objects.get(id=product_id)
+    except ProductVariant.DoesNotExist:
+        return Response({'status': 0, 'error': "Product not found"}, status=404)
+
+    wishlist_obj, created = Wishlist.objects.get_or_create(user=user)
+
+    if product_variant in wishlist_obj.products.all():
+        return Response({'status': 0, 'error': "Product already in wishlist"})
+
+    wishlist_obj.products.add(product_variant)
+
+    return Response({'status': 1, 'message': 'Product added to wishlist'})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_from_wishlist(request):
+    user = request.user
+    product_id = request.query_params.get('product_id')
+
+    if not product_id:
+        return Response({'status': 0, 'error': 'Product ID is required'}, status=400)
+
+    try:
+        product_variant = ProductVariant.objects.get(id=product_id)
+    except ProductVariant.DoesNotExist:
+        return Response({'status': 0, 'error': 'Product not found'}, status=404)
+
+    try:
+        wishlist_obj = Wishlist.objects.get(user=user)
+    except Wishlist.DoesNotExist:
+        return Response({'status': 0, 'error': 'Wishlist not found'}, status=404)
+
+    wishlist_obj.products.remove(product_variant)
+    return Response({'status': 1, 'message': 'Product deleted from wishlist'})
