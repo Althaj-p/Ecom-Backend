@@ -108,3 +108,26 @@ def clear_cart(request):
 
     except Cart.DoesNotExist:
         return Response({"error": "Cart not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def wishlists(request):
+    user = request.user
+    cache_key = f'wishlist_{user.id}'
+    cached_wishlist = cache.get(cache_key)
+    if cached_wishlist:
+        return Response(cached_wishlist, status=status.HTTP_200_OK)
+    try:
+        user_wishlist = Wishlist.objects.prefetch_related('products').get(user=user)
+    except Wishlist.DoesNotExist:
+        return Response({'status': 0, 'error': 'Wishlist not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = WishlistSerializer(user_wishlist)
+    response_data = {
+        'data': serializer.data,
+        'status': 1,
+    }
+    cache.set(cache_key, response_data, timeout=60 * 15)
+    
+    return Response(response_data, status=status.HTTP_200_OK)
