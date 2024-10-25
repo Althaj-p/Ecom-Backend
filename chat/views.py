@@ -2,14 +2,15 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from .models import ChatRoom, Message
+from django.db.models import Q
 # from .serializers import ChatRoomSerializer
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def chat_rooms(request):
     print('hai')
-    customer = request.user  # Get the current logged-in user
-    rooms = ChatRoom.objects.filter(customer=customer)
+    user = request.user  # Get the current logged-in user
+    rooms = ChatRoom.objects.filter(Q(customer=user)|Q(support_agent=user))
 
     # Add the last message to each room (if any)
     room_data = []
@@ -44,7 +45,7 @@ def chat_messages(request,roomId):
     message_list = [
         {
             'room_id':room.id,
-            'sender':room.sender.email,
+            'sender':room.sender.id,
             'message':room.text
         }for room in messages
     ]

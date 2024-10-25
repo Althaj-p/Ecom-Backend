@@ -85,7 +85,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         sender_email = data['sender']
 
         # Use sync_to_async to handle the ORM operations asynchronously
-        sender = await sync_to_async(User.objects.get)(email=sender_email)
+        sender = await sync_to_async(User.objects.get)(id=sender_email)
         room = await sync_to_async(ChatRoom.objects.get)(room_id=self.room_id)
 
         # Save the message to the database
