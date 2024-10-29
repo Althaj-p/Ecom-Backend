@@ -108,10 +108,10 @@ class ProductVarientImage(Base_content):
     def __str__(self):
         return f"{self.varient.product.name} Image"
     
-    def save(self, *args, **kwargs):
-        # Clear the product detail cache when a product is saved
-        cache_key = f"variant_detail_{self.slug}"
-        cache.delete(cache_key)
+    # def save(self, *args, **kwargs):
+    #     # Clear the product detail cache when a product is saved
+    #     cache_key = f"variant_detail_{self.slug}"
+    #     cache.delete(cache_key)
 
 
 class Warehouse(Base_content):

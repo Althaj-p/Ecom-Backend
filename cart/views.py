@@ -20,8 +20,8 @@ def view_cart(request):
     cache_key = f"cart_{user.id}"
 
     cached_cart = cache.get(cache_key)
-    if cached_cart:
-        return Response(cached_cart, status=status.HTTP_200_OK)
+    # if cached_cart:
+    #     return Response(cached_cart, status=status.HTTP_200_OK)
 
     try:
         cart = Cart.objects.get(user=user)
@@ -84,6 +84,28 @@ def delete_from_cart(request, item_id):
 
         # Invalidate the cache
         cache.delete(f"cart_{user.id}")
+        return Response({"success": "Item removed from cart."}, status=status.HTTP_204_NO_CONTENT)
+
+    except CartItem.DoesNotExist:
+        return Response({"error": "Cart item not found."}, status=status.HTTP_404_NOT_FOUND)
+    
+# update cart quantity
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_cart_quantity(request):
+    """
+    Remove an item from the cart by item ID.
+    """
+    user = request.user
+    item_id = request.data.get('item_id')
+    quantity = request.data.get('quantity')
+
+    try:
+        cart_item = CartItem.objects.get(id=item_id, cart__user=user)
+        cart_item.quantity=quantity
+        cart_item.save()
+
+        # Invalidate the cache
         return Response({"success": "Item removed from cart."}, status=status.HTTP_204_NO_CONTENT)
 
     except CartItem.DoesNotExist:

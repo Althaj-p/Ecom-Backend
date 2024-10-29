@@ -4,7 +4,8 @@ from products.models import ProductVariant
 from products.serializers import ProductVariantSerializer
 
 class CartItemSerializer(serializers.ModelSerializer):
-    variant = serializers.StringRelatedField()
+    # variant = serializers.StringRelatedField()
+    variant = ProductVariantSerializer()
 
     class Meta:
         model = CartItem
