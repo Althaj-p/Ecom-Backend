@@ -103,6 +103,8 @@ def update_cart_quantity(request):
     try:
         cart_item = CartItem.objects.get(id=item_id, cart__user=user)
         cart_item.quantity=quantity
+        cart_item.price = cart_item.variant.price
+        cart_item.cart_total = cart_item.quantity * Decimal(cart_item.price)
         cart_item.save()
 
         # Invalidate the cache
