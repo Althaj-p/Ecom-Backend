@@ -51,17 +51,18 @@ class Address(models.Model):
 
 class ShippingAddress(models.Model):
     user = models.ForeignKey(User, related_name='shipping_addresses', on_delete=models.CASCADE)
-    address_line_1 = models.CharField(max_length=255)
-    address_line_2 = models.CharField(max_length=255, blank=True, null=True)
+    address = models.CharField(max_length=255)
+    locality = models.TextField(blank=True, null=True)
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
-    country = models.CharField(max_length=100)
     postal_code = models.CharField(max_length=20)
     is_default = models.BooleanField(default=False)
     address_type = models.CharField(max_length=200,choices=(('Home','Home'),('Office','Office'),('Other','Other')),null=True,blank=True)
+    name=models.CharField(max_length=200,null=True,blank=True)
+    phone=models.CharField(max_length=200,null=True,blank=True)
 
     def __str__(self):
-        return f"{self.address_line_1}, {self.city}"
+        return f"{self.name}, {self.city}"
     
 class Notification(models.Model):
     user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
