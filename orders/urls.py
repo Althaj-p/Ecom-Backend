@@ -10,4 +10,6 @@ urlpatterns = [
     
     # Shipping methods
     path('shipping-methods/', views.shipping_methods, name='shipping_methods'),
+    path('shipping-addresses/', views.ShippingAddressListCreate.as_view(), name='shipping-address-list-create'),
+    path('shipping-addresses/<int:pk>/', views.ShippingAddressRetrieveUpdateDelete.as_view(), name='shipping-address-detail'),
 ]

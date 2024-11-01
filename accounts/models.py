@@ -58,6 +58,7 @@ class ShippingAddress(models.Model):
     country = models.CharField(max_length=100)
     postal_code = models.CharField(max_length=20)
     is_default = models.BooleanField(default=False)
+    address_type = models.CharField(max_length=200,choices=(('Home','Home'),('Office','Office'),('Other','Other')),null=True,blank=True)
 
     def __str__(self):
         return f"{self.address_line_1}, {self.city}"

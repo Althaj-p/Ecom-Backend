@@ -1,13 +1,14 @@
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
+from rest_framework import status,generics
 from decimal import Decimal
 from django.db import transaction
 from . models import *
 from cart.models import *
-from .serializers import OrderSerializer
+from .serializers import OrderSerializer,ShippingAddressSerializer
 from django.core.paginator import Paginator
+from accounts.models import ShippingAddress
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -213,3 +214,18 @@ def all_orders(request):
     }
 
     return Response(response_data, status=status.HTTP_200_OK)
+
+class ShippingAddressListCreate(generics.ListCreateAPIView):
+    serializer_class = ShippingAddressSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ShippingAddress.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class ShippingAddressRetrieveUpdateDelete(generics.RetrieveUpdateDestroyAPIView):
+    queryset = ShippingAddress.objects.all()
+    serializer_class = ShippingAddressSerializer
+    permission_classes = [IsAuthenticated]

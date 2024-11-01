@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, Payment
+from accounts.models import ShippingAddress
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
@@ -20,3 +21,8 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ['id', 'total_price', 'status', 'created_at', 'updated_at', 'shipping_address', 'payment_status', 'payment_method', 'items', 'payments']
+
+class ShippingAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShippingAddress
+        fields = ['id', 'address_line_1', 'address_line_2', 'city', 'state', 'country', 'postal_code', 'is_default']
