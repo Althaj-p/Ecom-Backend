@@ -9,6 +9,9 @@ from cart.models import *
 from .serializers import OrderSerializer,ShippingAddressSerializer
 from django.core.paginator import Paginator
 from accounts.models import ShippingAddress
+from django.conf import settings
+import stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -30,8 +33,8 @@ def checkout(request):
     
     # Check if shipping address is provided
     try:
-        shipping_address = Address.objects.get(id=shipping_address_id, user=user)
-    except Address.DoesNotExist:
+        shipping_address = ShippingAddress.objects.get(id=shipping_address_id, user=user)
+    except ShippingAddress.DoesNotExist:
         return Response({'error': 'Shipping address not found.'}, status=status.HTTP_404_NOT_FOUND)
     
     # Create the order and its items
@@ -69,6 +72,71 @@ def checkout(request):
 
     return Response({'order_id': order.id, 'message': 'Order created successfully.'}, status=status.HTTP_201_CREATED)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_checkout_session(request):
+    """
+    Create a Stripe Checkout session for an order.
+    """
+    try:
+        user = request.user
+        order_id = request.data.get('order_id')
+
+        # Get the order by ID and check if it belongs to the current user
+        try:
+            order = Order.objects.get(id=order_id, user=user, status='Pending')
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found or already processed.'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create the line items for the Stripe session from the order items
+        line_items = [
+            {
+                'price_data': {
+                    'currency': 'INR',
+                    'product_data': {
+                        'name': item.product.name,
+                    },
+                    'unit_amount': int(item.price * 100),  # Amount in cents
+                },
+                'quantity': item.quantity,
+            } for item in order.items.all()
+        ]
+
+        try:
+            # Create the Stripe Checkout session
+            customer=stripe.Customer.create(
+            name='Muhammed Althaj',
+            email='muhammedalthaj371@gmail.com',
+             address={
+                "line1":'Pukkunnummal House pandikkad',
+                "postal_code": '676521',
+                "city": 'malappuram',
+                "state": 'Kerala',
+                "country": 'in',
+            },
+            )
+            customer_id=customer.id
+            checkout_session = stripe.checkout.Session.create(
+                customer=customer_id,
+                payment_method_types=['card'],
+                line_items=line_items,
+                mode='payment',
+                success_url=settings.FRONTEND_URL + '/order-success?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=settings.FRONTEND_URL + '/order-cancel',
+                client_reference_id=order.id,
+            )
+
+            # Save the session ID in the order for reference
+            # order.payment_intent_id = checkout_session['id']
+            # order.save()
+
+            return Response({'checkout_url': checkout_session.url}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:
+        print(str(e),'eroro')
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

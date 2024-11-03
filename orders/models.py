@@ -1,5 +1,5 @@
 from django.db import models
-from accounts.models import User,Address
+from accounts.models import User,Address,ShippingAddress
 from products.models import Product,ProductVariant
 # Create your models here.
 
@@ -9,7 +9,7 @@ class Order(models.Model):
     status = models.CharField(max_length=50, default='Pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    shipping_address = models.ForeignKey(Address, related_name='orders', on_delete=models.SET_NULL, null=True)
+    shipping_address = models.ForeignKey(ShippingAddress, related_name='orders', on_delete=models.SET_NULL, null=True)
     payment_status = models.CharField(max_length=50, default='Pending')
     payment_method = models.CharField(max_length=50, blank=True, null=True)
     

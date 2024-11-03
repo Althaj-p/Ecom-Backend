@@ -88,6 +88,9 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+FRONTEND_URL = 'http://localhost:3000'  # Replace with your actual frontend URL
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -259,3 +262,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+STRIPE_PUBLIC_KEY = 'pk_test_51NxNyWSHO0TGfGIMs04veW3dQSS5VSGQm7md8pKGsYMfulpmmeRfDgzg6u2n40pwJ0R7yZfx7bm07RYY8x7y6njX00uQqu5Xle'  #Althaj
+STRIPE_SECRET_KEY = 'sk_test_51NxNyWSHO0TGfGIM54VpzhxWiRIC4OZqoZBksIcWtkHLi2oYCqtdSQKHPFFi9Ad1P5fFvDwyl0nhGlo8rAD4SgOS00nNQE0T7b'  #Althaj
