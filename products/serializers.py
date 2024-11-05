@@ -7,6 +7,10 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = '__all__'
 
+class BannerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Banner
+        fields = ['id', 'title', 'image', 'link_url', 'description', 'is_active']
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:

@@ -27,7 +27,17 @@ class SubCategory(Base_content):
     
     def __str__(self):
         return self.name
-    
+
+class Banner(Base_content):
+    title = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='banners/')
+    link_url = models.URLField(max_length=500, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.title
+
 class ProductTag(Base_content):
     name = models.CharField(max_length=50)
     slug = models.SlugField(unique=True)
@@ -43,6 +53,7 @@ class Product(Base_content):
     sku = models.CharField(max_length=100, unique=True)
     total_stock = models.IntegerField()
     category = models.ForeignKey(Category, related_name='products', on_delete=models.CASCADE)
+    subcategory = models.ForeignKey(SubCategory, related_name='products', on_delete=models.CASCADE,null=True)
     tags = models.ManyToManyField(ProductTag, related_name='products', blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

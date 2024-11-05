@@ -7,7 +7,13 @@ from . models import *
 from django.core.paginator import Paginator
 from rest_framework import status
 from django.core.cache import cache
+from rest_framework import generics
 # Create your views here.
+
+
+class BannerListView(generics.ListAPIView):
+    queryset = Banner.objects.filter(is_active=True).order_by('-created_on')
+    serializer_class = BannerSerializer
 
 @api_view(['GET'])
 def categories_list(request):
@@ -51,8 +57,8 @@ def variant_list(request):
     
     # Check if data is cached
     cached_data = cache.get(cache_key)
-    if cached_data:
-        return Response(cached_data, status=status.HTTP_200_OK)
+    # if cached_data:
+    #     return Response(cached_data, status=status.HTTP_200_OK)
 
     try:
         variants = ProductVariant.objects.all().select_related('product', 'primary_varient', 'secondary_varient', 'product__category') \
@@ -113,8 +119,8 @@ def product_variant_detail(request, slug):
 
     # Check if data is already cached
     cached_data = cache.get(cache_key)
-    if cached_data:
-        return Response(cached_data, status=status.HTTP_200_OK)
+    # if cached_data:
+    #     return Response(cached_data, status=status.HTTP_200_OK)
 
     # Fetch variant with related data
     variant = get_object_or_404(ProductVariant.objects.prefetch_related('variant_images', 'primary_varient', 'secondary_varient', 'product'), slug=slug)
