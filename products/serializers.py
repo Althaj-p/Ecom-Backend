@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Product, ProductVarientImage, ProductVariant,Category,ProductTag
 from .models import *
+from django.db.models import Avg
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,10 +30,23 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     """Serializer for basic product details to be included in the variant response."""
     category = serializers.StringRelatedField()  # Display the name of the category
     tags = serializers.StringRelatedField(many=True)  # Display the names of tags
+    average_rating = serializers.SerializerMethodField()
+    review_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
-        fields = ['id', 'name', 'description', 'category', 'tags', 'price', 'discount_price']
+        fields = ['id', 'name', 'description', 'category', 'tags', 'price', 'discount_price','average_rating','review_count']
+    
+    def get_average_rating(self, obj):
+        """Method to return the average rating for a product."""
+        reviews = obj.reviews.all()
+        if reviews.exists():
+            avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
+            return round(avg_rating, 1)
+        return 0
+    
+    def get_review_count(self,obj):
+        return obj.reviews.count()
 
 class ProductVariantSerializer(serializers.ModelSerializer):
     primary_varient = VariantValuesSerializer(read_only=True)

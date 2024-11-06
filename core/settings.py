@@ -139,7 +139,7 @@ CACHES = {
 }
 
 # Set up cache timeout (optional)
-CACHE_TTL = 60 * 15  # 15 minutes
+CACHE_TTL = 60 * 1  # 15 minutes
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

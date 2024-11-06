@@ -8,6 +8,7 @@ from django.core.paginator import Paginator
 from rest_framework import status
 from django.core.cache import cache
 from rest_framework import generics
+from django.db.models import Avg
 # Create your views here.
 
 
@@ -132,3 +133,55 @@ def product_variant_detail(request, slug):
     cache.set(cache_key, serializer.data, timeout=60 * 15)
 
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+@api_view(['GET'])
+def popular_variants(request):
+    """
+    Fetch a list of the first variant of each product based on the average rating of the product.
+    Only the first variant is listed per product, ordered by the product's average rating.
+
+    Query Parameters:
+    - page: (int) Optional. The page number for paginated results. Default is 1.
+
+    Response:
+    - Returns a paginated list of the first variant for each product, ordered by the product's average rating.
+    """
+    page = request.query_params.get('page', 1)
+    cache_key = f"popular_variants_page_{page}"
+
+    # Check if data is cached
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return Response(cached_data, status=status.HTTP_200_OK)
+
+    # Retrieve products ordered by their average rating, and get only the first variant of each product
+    products = Product.objects.annotate(
+        avg_rating=Avg('reviews__rating')
+    ).filter(
+        avg_rating__isnull=False  # Exclude products with no ratings
+    ).order_by('-avg_rating')
+
+    # Get the first variant of each product
+    first_variants = [product.variants.first() for product in products if product.variants.exists()]
+
+    # Paginate the results
+    paginator = Paginator(first_variants, 10)  # Show 10 variants per page
+    try:
+        paginated_variants = paginator.page(page)
+    except:
+        paginated_variants = paginator.page(1)
+
+    # Serialize the paginated first variant data
+    serializer = ProductVariantSerializer(paginated_variants, many=True)
+
+    # Prepare response data
+    response_data = {
+        'variants': serializer.data,
+        'page': paginated_variants.number,
+        'pages': paginator.num_pages,
+    }
+
+    # Cache the response data
+    cache.set(cache_key, response_data, timeout=60 * 1)  # Cache for 15 minutes
+
+    return Response(response_data, status=status.HTTP_200_OK)
