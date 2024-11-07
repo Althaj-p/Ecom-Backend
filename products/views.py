@@ -9,6 +9,9 @@ from rest_framework import status
 from django.core.cache import cache
 from rest_framework import generics
 from django.db.models import Avg
+from rest_framework.permissions import IsAuthenticated
+from datetime import datetime
+from django.db.models import F, ExpressionWrapper, DecimalField
 # Create your views here.
 
 
@@ -149,39 +152,105 @@ def popular_variants(request):
     page = request.query_params.get('page', 1)
     cache_key = f"popular_variants_page_{page}"
 
-    # Check if data is cached
     cached_data = cache.get(cache_key)
     if cached_data:
         return Response(cached_data, status=status.HTTP_200_OK)
 
-    # Retrieve products ordered by their average rating, and get only the first variant of each product
     products = Product.objects.annotate(
         avg_rating=Avg('reviews__rating')
     ).filter(
-        avg_rating__isnull=False  # Exclude products with no ratings
+        avg_rating__isnull=False 
     ).order_by('-avg_rating')
 
-    # Get the first variant of each product
     first_variants = [product.variants.first() for product in products if product.variants.exists()]
 
-    # Paginate the results
-    paginator = Paginator(first_variants, 10)  # Show 10 variants per page
+    paginator = Paginator(first_variants, 10) 
     try:
         paginated_variants = paginator.page(page)
     except:
         paginated_variants = paginator.page(1)
 
-    # Serialize the paginated first variant data
     serializer = ProductVariantSerializer(paginated_variants, many=True)
 
-    # Prepare response data
     response_data = {
         'variants': serializer.data,
         'page': paginated_variants.number,
         'pages': paginator.num_pages,
     }
 
-    # Cache the response data
     cache.set(cache_key, response_data, timeout=60 * 1)  # Cache for 15 minutes
 
     return Response(response_data, status=status.HTTP_200_OK)
+
+class RecentlyViewedProductVariantView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        cache_key = f"recently_viewed_variants_{user.id}"
+        
+        product_variants_data = cache.get(cache_key)
+
+        if product_variants_data is None:
+            recently_viewed_items = RecentlyViewedProduct.objects.filter(user=user).order_by('-viewed_at')[:10]  # Limit to 10 most recent
+            # print(recently_viewed_items,'recent')
+            # product_variants = ProductVariant.objects.filter(id__in=[item.product_variant.id for item in recently_viewed_items])
+            # print(product_variants,'variants')
+            product_variant_ids = [item.product_variant.id for item in recently_viewed_items]
+            product_variants = ProductVariant.objects.filter(id__in=product_variant_ids)
+
+            product_variants = sorted(product_variants, key=lambda pv: product_variant_ids.index(pv.id))
+
+            
+            serializer = ProductVariantSerializer(product_variants, many=True)
+            product_variants_data = serializer.data
+
+            cache.set(cache_key, product_variants_data, timeout=60 * 1)
+        print(product_variants_data,'data2')
+        response_data = {
+            'status':1,
+            'data':product_variants_data
+        }
+        return Response(response_data)
+
+    def post(self, request):
+        user = request.user
+        product_slug = request.data.get("product_slug")
+
+        if not product_slug:
+            return Response({"error": "Product variant slug is required.",'status':0}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            product_variant = ProductVariant.objects.get(slug=product_slug)
+        except ProductVariant.DoesNotExist:
+            return Response({"error": "Product variant not found.",'status':0}, status=status.HTTP_404_NOT_FOUND)
+
+        recently_viewed, created = RecentlyViewedProduct.objects.update_or_create(
+            user=user,
+            product_variant=product_variant,
+            defaults={"viewed_at": datetime.now()}
+        )
+
+        cache_key = f"recently_viewed_variants_{user.id}"
+        cache.delete(cache_key)
+
+        return Response({"message": "Product variant marked as recently viewed.",'status':1}, status=status.HTTP_200_OK)
+
+class TopOfferProductVariantsView(APIView):
+    
+    def get(self, request):
+        offer_variants = ProductVariant.objects.filter(
+            discount_price__isnull=False,
+            discount_price__lt=F('price')  # Ensure there's a discount
+        ).annotate(
+            discount_amount=ExpressionWrapper(
+                F('price') - F('discount_price'), output_field=DecimalField(max_digits=10, decimal_places=2)
+            )
+        ).order_by('-discount_amount')[:10]  # Get top 10 by discount amount
+
+        serializer = ProductVariantSerializer(offer_variants, many=True)
+        
+        return Response({
+            "status": 1,
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)

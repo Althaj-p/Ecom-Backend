@@ -5,6 +5,7 @@ from uuid import uuid4
 from django.utils.text import slugify 
 from core.utils import Base_content
 from django.core.cache import cache
+from django.utils import timezone
 
 # Create your models here.
 class Category(Base_content):
@@ -152,3 +153,22 @@ class Review(Base_content):
     
     def __str__(self):
         return f"Review by {self.user.email} on {self.product.name}"
+
+
+class RecentlyViewedProduct(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="recently_viewed")
+    product_variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name="recently_viewed")
+    viewed_at = models.DateTimeField(default=timezone.now)
+    
+    class Meta:
+        unique_together = ('user', 'product_variant')
+        ordering = ['-viewed_at']  # Order by most recent views
+    
+    def __str__(self):
+        return f"{self.user.email} viewed {self.product_variant.variant_name}"
+    
+    def save(self, *args, **kwargs):
+        # Update cache when a product is viewed
+        super().save(*args, **kwargs)
+        cache_key = f"recently_viewed_variants_{self.user.id}"
+        cache.delete(cache_key)
